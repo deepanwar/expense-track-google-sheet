@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F6B4F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Spent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Spent</title>
+<style>
+:root{
+  --bg:#EEF2EC; --surface:#FFFFFF; --ink:#1D2B24; --muted:#5E6F66; --line:#D3DDD5;
+  --chip:#E1E9E2; --accent:#2F6B4F; --on-accent:#FFFFFF; --owe:#A63D2F;
+  --num: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#121A16; --surface:#1B2620; --ink:#E4EDE7; --muted:#9AAEA3; --line:#2C3B33;
+         --chip:#223029; --accent:#7CC39E; --on-accent:#0E1A14; --owe:#EE8C77; }
+}
+*,*::before,*::after{ box-sizing: inherit; }
+[hidden]{ display:none !important; }
+html{ height:100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body{ margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+      font:16px/1.45 var(--text); -webkit-tap-highlight-color:transparent; }
+button{ font:inherit; cursor:pointer; }
+:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+/* header */
+.top{ position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; background:var(--bg);
+      display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--line); }
+.top h1{ margin:0; font:700 21px/1 var(--num); letter-spacing:-.01em; }
+.pending{ font-size:12px; color:var(--owe); border:1px solid currentColor; border-radius:999px;
+          padding:3px 9px; background:none; }
+nav{ margin-left:auto; display:flex; gap:2px; }
+.tab{ background:none; border:0; color:var(--muted); font-weight:600; font-size:15px;
+      padding:8px 10px; border-radius:10px; display:flex; align-items:center; }
+.tab.is-on{ color:var(--ink); background:var(--chip); }
+
+main{ max-width:520px; margin:0 auto; padding:16px 18px 130px; }
+
+/* add view */
+.seg{ display:inline-flex; background:var(--chip); border-radius:12px; padding:3px; }
+.seg button{ border:0; background:none; padding:8px 16px; border-radius:9px; font-weight:600;
+             font-size:14px; color:var(--muted); }
+.seg .is-on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
+
+.amount{ display:flex; align-items:baseline; gap:6px; margin:20px 0 4px; padding-bottom:4px;
+         border-bottom:2px solid var(--ink); }
+.amount:focus-within{ border-color:var(--accent); }
+.cur{ font:600 34px var(--num); color:var(--muted); }
+#amount{ flex:1; min-width:0; border:0; background:none; color:var(--ink); padding:0; outline:none;
+         font:700 clamp(52px, 16vw, 72px)/1.05 var(--num); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+#amount::placeholder{ color:var(--line); }
+
+h2{ font:600 13px/1.3 var(--text); color:var(--muted); margin:20px 0 8px; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:8px; }
+.pills{ display:flex; flex-wrap:wrap; gap:8px; }
+.pill{ min-height:44px; padding:10px 14px; border-radius:12px; border:1px solid var(--line);
+       background:var(--surface); color:var(--ink); font-size:15px; font-weight:500; text-align:center; }
+.grid .pill{ min-height:52px; padding:10px 6px; }
+.pill.is-on{ background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600; }
+
+.hint{ min-height:1.45em; margin:18px 0 2px; font-weight:600; color:var(--accent); }
+.row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.field{ display:flex; flex-direction:column; gap:6px; margin:14px 0; font-size:13px; color:var(--muted); }
+.row .field{ margin:0; }
+.grow{ flex:1; min-width:170px; }
+.field input{ font:16px var(--text); color:var(--ink); background:var(--surface); border:1px solid var(--line);
+              border-radius:10px; padding:10px 12px; min-height:46px; width:100%; }
+
+.savebar{ position:fixed; left:0; right:0; bottom:0; z-index:4;
+          padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+          background:linear-gradient(to top, var(--bg) 72%, transparent); }
+.primary{ display:block; width:100%; max-width:484px; margin:0 auto; border:0; border-radius:14px;
+          padding:16px; background:var(--accent); color:var(--on-accent); font-weight:700; font-size:17px; }
+.ghost{ border:1px solid var(--line); background:none; color:var(--ink); border-radius:10px;
+        padding:10px 14px; font-weight:600; font-size:14px; }
+
+/* summary view */
+.sumhead{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.sumhead p{ margin:0; }
+.muted{ color:var(--muted); font-size:14px; }
+.big{ font:700 46px/1.1 var(--num); font-variant-numeric:tabular-nums; margin:2px 0 !important; }
+ul{ list-style:none; margin:0; padding:0; }
+.bars li{ padding:8px 0; }
+.bars .line{ display:flex; justify-content:space-between; gap:10px; }
+.bars .track{ height:6px; border-radius:3px; background:var(--chip); margin-top:6px; overflow:hidden; }
+.bars .fill{ height:100%; background:var(--accent); border-radius:3px; }
+.bal li{ padding:12px 14px; border-radius:12px; background:var(--surface); border:1px solid var(--line);
+         margin-bottom:8px; display:flex; justify-content:space-between; gap:10px; font-weight:600; }
+.bal .plus{ color:var(--accent); }
+.bal .minus{ color:var(--owe); }
+.recent li{ display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+.recent small{ display:block; color:var(--muted); font-size:13px; }
+.num{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.msg{ margin:14px 0; padding:12px 14px; border-radius:12px; background:var(--chip); font-size:14px; }
+.msg.err{ color:var(--owe); }
+
+/* settings */
+.intro{ margin:4px 0 8px; }
+.btnrow{ display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
+.btnrow .primary{ flex:1; width:auto; }
+
+.toast{ position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom, 0px)); z-index:9;
+        transform:translate(-50%, 12px); opacity:0; pointer-events:none; max-width:calc(100% - 36px);
+        background:var(--ink); color:var(--bg); padding:11px 16px; border-radius:12px; font-size:15px;
+        font-weight:600; transition:opacity .2s, transform .2s; }
+.toast.show{ opacity:1; transform:translate(-50%, 0); }
+.toast.err{ background:var(--owe); color:#fff; }
+@media (prefers-reduced-motion: reduce){ .toast{ transition:none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Spent</h1>
+  <button id="pending" class="pending" hidden></button>
+  <nav>
+    <button class="tab is-on" data-view="add">Add</button>
+    <button class="tab" data-view="summary">Summary</button>
+    <button class="tab" data-view="settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>
+      </svg>
+    </button>
+  </nav>
+</header>
+
+<main>
+  <!-- ADD -->
+  <section id="view-add">
+    <div class="seg" aria-label="Entry type">
+      <button type="button" data-mode="expense" class="is-on">Expense</button>
+      <button type="button" data-mode="settle">Settle up</button>
+    </div>
+
+    <label class="amount">
+      <span class="sr">Amount</span>
+      <span id="cur" class="cur"></span>
+      <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+    </label>
+
+    <div id="expenseBox">
+      <h2>Category</h2>
+      <div id="cats" class="grid"></div>
+      <h2>Who is this for?</h2>
+      <div id="people" class="pills"></div>
+      <div id="shareBox" hidden>
+        <h2>Who paid?</h2>
+        <div id="paidBy" class="pills"></div>
+        <h2>How to split</h2>
+        <div id="split" class="pills"></div>
+      </div>
+    </div>
+
+    <div id="settleBox" hidden>
+      <h2>With</h2>
+      <div id="settlePeople" class="pills"></div>
+      <h2>Who paid whom?</h2>
+      <div id="direction" class="pills"></div>
+    </div>
+
+    <p id="hint" class="hint" aria-live="polite"></p>
+
+    <div class="row">
+      <label class="field"><span>Date</span><input id="date" type="date"></label>
+      <label class="field grow"><span>Note (optional)</span><input id="note" type="text" maxlength="120" placeholder="e.g. pizza night"></label>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="view-summary" hidden>
+    <div class="sumhead">
+      <div>
+        <p class="muted" id="monthLabel"></p>
+        <p class="big" id="monthTotal">–</p>
+        <p class="muted">your spending this month</p>
+      </div>
+      <button id="refresh" class="ghost" type="button">Refresh</button>
+    </div>
+    <p id="sumMsg" class="msg" hidden></p>
+    <h2>Who owes whom</h2>
+    <ul id="balList" class="bal"></ul>
+    <h2>By category</h2>
+    <ul id="catList" class="bars"></ul>
+    <h2>Recent entries</h2>
+    <ul id="recentList" class="recent"></ul>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" hidden>
+    <p class="intro">Connect the app to your Google Sheet. You only need to do this once on each phone. These details stay on this phone.</p>
+    <label class="field"><span>Web app link (ends with /exec)</span>
+      <input id="sUrl" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"></label>
+    <label class="field"><span>Secret key (the same one you put in the script)</span>
+      <input id="sKey" type="password" autocomplete="off"></label>
+    <label class="field"><span>Currency symbol (optional)</span>
+      <input id="sCur" maxlength="4" placeholder="e.g. ₹  $  €  £"></label>
+    <label class="field"><span>People you share costs with (separate with commas)</span>
+      <input id="sPeople" placeholder="Flatmate, Sam, Priya"></label>
+    <label class="field"><span>Categories (separate with commas)</span>
+      <input id="sCats"></label>
+    <div class="btnrow">
+      <button id="sSave" class="primary" type="button">Save settings</button>
+      <button id="sTest" class="ghost" type="button">Test connection</button>
+    </div>
+    <p id="sMsg" class="msg" hidden></p>
+  </section>
+</main>
+
+<div id="savebar" class="savebar"><button id="saveBtn" class="primary" type="button">Save expense</button></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const DEFAULTS = {
+  url: '', key: '', currency: '', people: ['Flatmate'],
+  categories: ['Food', 'Groceries', 'Transport', 'Rent & bills', 'Shopping', 'Fun', 'Health', 'Other']
+};
+let cfg = Object.assign({}, DEFAULTS, store.get('cfg', {}));
+let queue = store.get('queue', []);
+const st = { view: 'add', mode: 'expense', category: null, person: 'Just me',
+             settlePerson: null, paidBy: 'me', split: 'half' };
+let flushing = false, lastError = '';
+
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const money = n => (cfg.currency || '') + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const half = a => Math.round(a * 50) / 100;
+
+function readAmount() {
+  let raw = $('#amount').value.trim().replace(/\s/g, '');
+  if (/^\d+,\d{1,2}$/.test(raw)) raw = raw.replace(',', '.');   // 12,50 -> 12.50
+  else raw = raw.replace(/,/g, '');                              // 1,250 -> 1250
+  const n = Math.round(parseFloat(raw) * 100) / 100;
+  return n > 0 ? n : 0;
+}
+
+function pills(el, items, current, onPick) {
+  el.innerHTML = items.map(it =>
+    `<button type="button" class="pill${it.value === current ? ' is-on' : ''}" data-v="${esc(it.value)}" aria-pressed="${it.value === current}">${esc(it.label)}</button>`
+  ).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if (b) onPick(b.dataset.v); };
+}
+
+function render() {
+  $('#cur').textContent = cfg.currency || '';
+  document.querySelectorAll('[data-mode]').forEach(b => {
+    const on = b.dataset.mode === st.mode;
+    b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on);
+  });
+  const isExp = st.mode === 'expense';
+  $('#expenseBox').hidden = !isExp;
+  $('#settleBox').hidden = isExp;
+
+  if (st.person !== 'Just me' && !cfg.people.includes(st.person)) st.person = 'Just me';
+  if (!cfg.people.includes(st.settlePerson)) st.settlePerson = cfg.people[0] || null;
+
+  if (isExp) {
+    pills($('#cats'), cfg.categories.map(c => ({ value: c, label: c })), st.category,
+      v => { st.category = st.category === v ? null : v; render(); });
+    pills($('#people'), ['Just me', ...cfg.people].map(p => ({ value: p, label: p })), st.person,
+      v => { st.person = v; render(); });
+    const shared = st.person !== 'Just me';
+    $('#shareBox').hidden = !shared;
+    if (shared) {
+      const p = st.person;
+      pills($('#paidBy'), [{ value: 'me', label: 'I paid' }, { value: 'them', label: `${p} paid` }], st.paidBy,
+        v => { st.paidBy = v; render(); });
+      pills($('#split'), [{ value: 'half', label: 'Half each' },
+                          { value: 'full', label: st.paidBy === 'me' ? `${p} owes all` : 'I owe all' }], st.split,
+        v => { st.split = v; render(); });
+    }
+  } else {
+    const p = st.settlePerson;
+    pills($('#settlePeople'), cfg.people.map(x => ({ value: x, label: x })), p,
+      v => { st.settlePerson = v; render(); });
+    pills($('#direction'), p ? [{ value: 'me', label: `I paid ${p}` }, { value: 'them', label: `${p} paid me` }] : [],
+      st.paidBy, v => { st.paidBy = v; render(); });
+  }
+  $('#saveBtn').textContent = isExp ? 'Save expense' : 'Save payment';
+  updateHint();
+  updatePending();
+}
+
+function updateHint() {
+  const a = readAmount();
+  let t = '';
+  if (st.mode === 'settle') {
+    const p = st.settlePerson;
+    if (!p) t = 'Add people in Settings first.';
+    else if (a) t = st.paidBy === 'me' ? `You are paying ${p} ${money(a)}.` : `${p} is paying you ${money(a)}.`;
+  } else if (a) {
+    const p = st.person;
+    if (p === 'Just me') t = `${money(a)} goes to your spending.`;
+    else if (st.split === 'half') t = st.paidBy === 'me' ? `${p} will owe you ${money(a - half(a))}.` : `You will owe ${p} ${money(half(a))}.`;
+    else t = st.paidBy === 'me' ? `${p} will owe you ${money(a)}.` : `You will owe ${p} ${money(a)}.`;
+  }
+  $('#hint').textContent = t;
+}
+
+function updatePending() {
+  const b = $('#pending');
+  b.hidden = queue.length === 0;
+  b.textContent = `${queue.length} not synced`;
+}
+
+let toastTimer;
+function toast(text, isErr) {
+  const t = $('#toast');
+  t.textContent = text;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), isErr ? 4500 : 2200);
+}
+
+async function save() {
+  const amount = readAmount();
+  if (!amount) { toast('Enter an amount first.', true); $('#amount').focus(); return; }
+  if (st.mode === 'expense' && !st.category) { toast('Pick a category.', true); return; }
+  if (st.mode === 'settle' && !st.settlePerson) { toast('Add a person in Settings first.', true); return; }
+
+  queue.push({
+    id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2),
+    type: st.mode,
+    amount,
+    category: st.mode === 'expense' ? st.category : 'Settle up',
+    person: st.mode === 'expense' ? st.person : st.settlePerson,
+    paidBy: st.paidBy,
+    split: st.split,
+    date: $('#date').value || today(),
+    note: $('#note').value.trim()
+  });
+  store.set('queue', queue);
+
+  // Reset for the next entry. The date stays, which helps when catching up on past days.
+  $('#amount').value = ''; $('#note').value = '';
+  st.category = null; st.person = 'Just me'; st.paidBy = 'me'; st.split = 'half';
+  render();
+
+  if (!cfg.url || !cfg.key) { toast('Saved on this phone. Add your sheet link in Settings to sync.'); return; }
+  const r = await flush();
+  if (r === 'ok' || r === 'busy') toast('Saved to your sheet.');
+  else if (r === 'error') toast(`Saved on this phone, but the sheet said: ${lastError}`, true);
+  else toast('Saved on this phone. It will sync when you are online.');
+}
+
+async function flush() {
+  if (flushing) return 'busy';
+  if (!queue.length) return 'ok';
+  if (!cfg.url || !cfg.key || !navigator.onLine) return 'offline';
+  flushing = true;
+  let result = 'ok';
+  try {
+    while (queue.length) {
+      const res = await fetch(cfg.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({}, queue[0], { key: cfg.key }))
+      });
+      let data;
+      try { data = JSON.parse(await res.text()); }
+      catch (e) { lastError = 'the link did not answer correctly. Check the link and that access is set to Anyone.'; result = 'error'; break; }
+      if (!data.ok) { lastError = data.error || 'unknown error'; result = 'error'; break; }
+      queue.shift();
+      store.set('queue', queue);
+    }
+  } catch (e) {
+    result = 'offline';
+  } finally {
+    flushing = false;
+    updatePending();
+  }
+  return result;
+}
+
+async function fetchSummary() {
+  const d = new Date();
+  const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const res = await fetch(`${cfg.url}?key=${encodeURIComponent(cfg.key)}&month=${month}`);
+  const data = JSON.parse(await res.text());
+  if (!data.ok) throw new Error(data.error || 'unknown error');
+  return data;
+}
+
+function showMsg(el, text, isErr) {
+  el.hidden = !text;
+  el.textContent = text || '';
+  el.classList.toggle('err', !!isErr);
+}
+
+async function loadSummary() {
+  const msg = $('#sumMsg');
+  $('#monthLabel').textContent = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  if (!cfg.url || !cfg.key) { showMsg(msg, 'Add your sheet link in Settings to see your summary.'); return; }
+  showMsg(msg, 'Loading your summary…');
+  await flush();
+  try {
+    const data = await fetchSummary();
+    showMsg(msg, queue.length ? `${queue.length} entries on this phone are not synced yet, so they are not counted.` : '');
+    $('#monthTotal').textContent = money(data.total);
+
+    const max = Math.max(1, ...data.byCategory.map(c => c.amount));
+    $('#catList').innerHTML = data.byCategory.length
+      ? data.byCategory.map(c => `<li><div class="line"><span>${esc(c.name)}</span><span class="num">${money(c.amount)}</span></div>
+          <div class="track"><div class="fill" style="width:${(c.amount / max * 100).toFixed(1)}%"></div></div></li>`).join('')
+      : '<li class="muted">Nothing spent this month yet.</li>';
+
+    const owing = data.balances.filter(b => Math.abs(b.amount) >= 0.01);
+    $('#balList').innerHTML = owing.length
+      ? owing.map(b => b.amount > 0
+          ? `<li><span>${esc(b.person)} owes you</span><span class="num plus">${money(b.amount)}</span></li>`
+          : `<li><span>You owe ${esc(b.person)}</span><span class="num minus">${money(-b.amount)}</span></li>`).join('')
+      : '<li><span>All settled. Nobody owes anything.</span></li>';
+
+    $('#recentList').innerHTML = data.recent.length
+      ? data.recent.map(r => `<li><span>${esc(r.category)}${r.person && r.person !== 'Just me' ? ' with ' + esc(r.person) : ''}
+          <small>${esc(r.date)}${r.note ? ' · ' + esc(r.note) : ''}</small></span><span class="num">${money(r.amount)}</span></li>`).join('')
+      : '<li class="muted">No entries yet. Add your first one from the Add tab.</li>';
+  } catch (e) {
+    showMsg(msg, `Could not load the summary: ${e.message}. Check your internet and your settings.`, true);
+  }
+}
+
+function showView(v) {
+  st.view = v;
+  ['add', 'summary', 'settings'].forEach(n => { $('#view-' + n).hidden = n !== v; });
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('is-on', t.dataset.view === v));
+  $('#savebar').hidden = v !== 'add';
+  if (v === 'summary') loadSummary();
+  if (v === 'settings') fillSettings();
+  window.scrollTo(0, 0);
+}
+
+function fillSettings() {
+  $('#sUrl').value = cfg.url; $('#sKey').value = cfg.key; $('#sCur').value = cfg.currency;
+  $('#sPeople').value = cfg.people.join(', '); $('#sCats').value = cfg.categories.join(', ');
+  showMsg($('#sMsg'), '');
+}
+
+function list(s) {
+  const seen = new Set();
+  return s.split(',').map(x => x.trim()).filter(x => x && x.toLowerCase() !== 'just me' && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()));
+}
+
+function saveSettings() {
+  const cats = list($('#sCats').value);
+  cfg = {
+    url: $('#sUrl').value.trim(),
+    key: $('#sKey').value,
+    currency: $('#sCur').value.trim(),
+    people: list($('#sPeople').value),
+    categories: cats.length ? cats : DEFAULTS.categories
+  };
+  store.set('cfg', cfg);
+  render();
+}
+
+// events
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  st.mode = b.dataset.mode; st.paidBy = 'me'; render();
+}));
+$('#amount').addEventListener('input', updateHint);
+$('#amount').addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+$('#saveBtn').addEventListener('click', save);
+$('#refresh').addEventListener('click', loadSummary);
+$('#pending').addEventListener('click', async () => {
+  const r = await flush();
+  toast(r === 'ok' ? 'All entries synced.' : r === 'error' ? `Sync failed: ${lastError}` : 'Still offline. Will try again later.', r !== 'ok');
+});
+$('#sSave').addEventListener('click', async () => {
+  saveSettings();
+  toast('Settings saved.');
+  if (queue.length) flush();
+});
+$('#sTest').addEventListener('click', async () => {
+  saveSettings();
+  const m = $('#sMsg');
+  if (!cfg.url || !cfg.key) { showMsg(m, 'Fill in the web app link and the secret key first.', true); return; }
+  showMsg(m, 'Testing…');
+  try {
+    const data = await fetchSummary();
+    showMsg(m, `Connected. Your sheet has ${data.count} ${data.count === 1 ? 'entry' : 'entries'}.`);
+    flush();
+  } catch (e) {
+    showMsg(m, `Could not connect: ${e.message}. Check the link, the secret key, and that access is set to Anyone.`, true);
+  }
+});
+window.addEventListener('online', () => flush());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') flush(); });
+
+// start
+$('#date').value = today();
+render();
+showView(cfg.url ? 'add' : 'settings');
+flush();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
